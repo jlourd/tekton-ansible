@@ -1,0 +1,61 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: run-ansible-playbook
+spec:
+  params:
+    - name: ansible-playbook
+      type: string
+      description: The name of the Ansible playbook to run
+    - name: inventory
+      type: string
+      description: The inventory file for the Ansible playbook
+  steps:
+    - name: ansible-playbook
+      image: ansible/ansible-runner
+      script: |
+        #!/bin/bash
+        ansible-playbook -i $(inputs.params.inventory) $(inputs.params.ansible-playbook)
+
+
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: ansible-pipeline
+spec:
+  params:
+    - name: ansible-playbook
+      type: string
+    - name: inventory
+      type: string
+  tasks:
+    - name: run-ansible-playbook
+      taskRef:
+        name: run-ansible-playbook
+      params:
+        - name: ansible-playbook
+          value: $(params.ansible-playbook)
+        - name: inventory
+          value: $(params.inventory)
+
+
+
+apiVersion: tekton.dev/v1beta1
+kind: PipelineRun
+metadata:
+  name: ansible-pipeline-run
+spec:
+  pipelineRef:
+    name: ansible-pipeline
+  params:
+    - name: ansible-playbook
+      value: "path/to/your/playbook.yml"
+    - name: inventory
+      value: "path/to/your/inventory"
+
+
+
+
+oc apply -f ansible-task.yaml
+oc apply -f ansible-pipeline.yaml
+oc apply -f pipeline-run.yaml
